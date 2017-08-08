@@ -85,7 +85,9 @@
                 var pubnub = new PubNub({
                     subscribeKey: SUB_KEY,
                     publishKey: PUB_KEY,
-                    uuid: uuid
+                    uuid: uuid,
+                    presenceTimeout: 10,
+                    heartbeatInterval: 5
                 });
 
                 function publishMessage() {
@@ -94,7 +96,8 @@
                         channel : CHAT_CHANNEL,
                         message : {
                             text: input.value,
-                            sender: uuid
+                            sender: uuid,
+	                        chatRoom: window.location.href
                         }
                     }, function () {
                         input.value='';
@@ -115,7 +118,7 @@
                         messagesBox.scrollTop = messagesBox.scrollHeight;
                     }});
 
-                pubnub.subscribe({channels:[CHAT_CHANNEL]});
+                pubnub.subscribe({channels:[CHAT_CHANNEL], withPresence: true});
 
                 $('sendButton').addEventListener('click', function (event) {
                     event.preventDefault();
