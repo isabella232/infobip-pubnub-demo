@@ -10,27 +10,21 @@ export default (request) => {
     const uuid = request.message.uuid;
 
     db.get(DESTINATION_KEY).then((found) => {
-        const dest = found ? found : [];
-        let index;
+        const destinations = found ? found : [];
         switch(action) {
             case 'join':
-                index = dest.indexOf(uuid);
+            case 'leave':
+                const index = destinations.indexOf(uuid);
                 if (index > -1) {
-                    dest.splice(index, 1);
+                    destinations.splice(index, 1);
                 }
                 break;
             case 'timeout':
-                dest.push(uuid);
-                break;
-            case 'leave':
-                index = dest.indexOf(uuid);
-                if (index > -1) {
-                    dest.splice(index, 1);
-                }
+                destinations.push(uuid);
                 break;
         }
-        console.log(`After Presence update, smsDestinations: ${dest}`);
-        db.set(DESTINATION_KEY, dest);
+        console.log(`After Presence update, smsDestinations: ${destinations}`);
+        db.set(DESTINATION_KEY, destinations);
     });
 
     return request.ok();
