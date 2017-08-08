@@ -1,0 +1,45 @@
+body {
+	padding-top: 40px;
+	padding-bottom: 40px;
+	background-color: #eee;
+}
+
+.container {
+	max-width: 500px;
+	padding: 15px;
+	margin: 0 auto;
+}
+.form-heading {
+	margin-bottom: 10px;
+}
+
+.form-control {
+	position: relative;
+	height: auto;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	padding: 10px;
+	font-size: 16px;
+}
+
+.form-chat {
+	margin-bottom: 10px;
+}
+
+input {
+	margin-bottom: 10px;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.messages-container {
+	height: 500px;
+	margin-bottom: 10px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overflow-wrap: break-word;
+}
+
+.hidden {
+	display: none;
+}

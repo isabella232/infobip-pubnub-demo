@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<!--<link rel="icon" href="img/favicon.ico">-->
+
+		<title>Chat with SMS</title>
+
+		<!-- Bootstrap 4 -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js"></script>
+		<!--Font Awesome-->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+		<!-- Custom styles for this template -->
+		<link href="css/custom.css" rel="stylesheet">
+		<!--PubNub JavaScript SDK-->
+		<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.13.0.js"></script>
+	</head>
+
+	<body>
+
+		<div class="container">
+
+			<form class="form-signin hidden" id="singup">
+				<h2 class="form-heading">Please sign in with your phone number</h2>
+				<label for="inputName" class="sr-only">Screen name</label>
+				<input id="inputName" class="form-control" placeholder="Screen name" required autofocus>
+				<label for="inputPhone" class="sr-only">Phone number</label>
+				<input id="inputPhone" class="form-control" placeholder="Phone number" required autofocus>
+				<button class="btn btn-lg btn-primary btn-block" id="signInButton">Sign in</button>
+			</form>
+
+			<div id="chat" class="form-chat hidden">
+				<h2 class="form-heading">Chat!</h2>
+				<div id="chatMessages" class="form-control messages-container"></div>
+				<form class="form-chat" onsubmit="return false;">
+					<div class="input-group">
+						<label for="inputMessage" class="sr-only">Password</label>
+						<input class="form-control" id="inputMessage" placeholder="Message..." autocomplete="off" autofocus>
+						<span class="input-group-btn">
+				            <button type="button" class="btn btn-primary" id="sendButton">
+					            <i class="fa fa-paper-plane fa-2x"></i>
+				            </button>
+				        </span>
+					</div>
+				</form>
+				<button type="button" class="btn btn-warning" id="singOutButton">Sign out</button>
+			</div>
+
+		</div>
+
+		<script>(function(){
+		    var PUB_KEY = 'YOUR_PUB_KEY';
+		    var SUB_KEY = 'YOUR_SUB_KEY';
+		    var CHAT_CHANNEL = 'chat-channel';
+
+            function $(id) { return document.getElementById(id); }
+
+            function getQueryParameterByName(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, ' '));
+            }
+
+            function show(elementId) {
+                var element = $(elementId);
+                element.className = element.className.replace(/hidden/, '');
+            }
+
+            function hide(elementId) {
+                $(elementId).className += ' hidden ';
+            }
+
+            function sanitize(text) {
+				return ('' + text).replace(/</g, '').replace(/>/g, '&gt;');
+            }
+
+            function initiatePubNubFor(uuid) {
+                var pubnub = new PubNub({
+                    subscribeKey: SUB_KEY,
+                    publishKey: PUB_KEY,
+                    uuid: uuid
+                });
+
+                function publishMessage() {
+                    var input = $('inputMessage');
+                    pubnub.publish({
+                        channel : CHAT_CHANNEL,
+                        message : {
+                            text: input.value,
+                            sender: uuid
+                        }
+                    }, function () {
+                        input.value='';
+                    });
+                }
+
+                pubnub.addListener({
+                    message: function(obj) {
+                        var text = sanitize(obj.message.text);
+                        var sender = sanitize(obj.message.sender);
+                        if (sender === uuid) {
+                            sender = 'you';
+                        } else {
+                            sender = sender.substring(0, sender.lastIndexOf('@'));
+                        }
+                        var messagesBox = $('chatMessages');
+                        messagesBox.innerHTML += '<b>' + sender + ':</b>\t' + text + '<br>';
+                        messagesBox.scrollTop = messagesBox.scrollHeight;
+                    }});
+
+                pubnub.subscribe({channels:[CHAT_CHANNEL]});
+
+                $('sendButton').addEventListener('click', function (event) {
+                    event.preventDefault();
+                    publishMessage();
+                });
+
+                $('inputMessage').addEventListener('keyup', function(event) {
+                    event.preventDefault();
+                    if ((event.keyCode || event.charCode) === 13) {
+                        publishMessage();
+                    }
+                });
+
+                $('singOutButton').addEventListener('click', function(event) {
+                    event.preventDefault();
+                    pubnub.unsubscribeAll();
+                    location.reload();
+                });
+            }
+
+            var uuidParam = getQueryParameterByName('uuid');
+			if (uuidParam) {
+                show('chat');
+                initiatePubNubFor(uuidParam);
+			} else {
+                show('singup');
+			}
+
+			$('signInButton').addEventListener('click', function (event) {
+                var name = $('inputName').value;
+                var phone = $('inputPhone').value;
+                if (!(!!name && !!phone)) return;
+                event.preventDefault();
+                hide('singup');
+                show('chat');
+                initiatePubNubFor(name + '@' + phone);
+			})
+
+        })();</script>
+
+	</body>
+</html>
