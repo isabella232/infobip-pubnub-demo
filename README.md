@@ -8,11 +8,9 @@ With PubNub's easy to use and highly performant serverless application environme
 
 ## Use case
 
-In the course of this post we will develop a highly reliable chat web application. PubNub's real time communication capabilities are a great fit for chat  apps. However, they usually rely on internet availability for message delivery. In this scenario our users' chat messages are time critical and their delivery must be guarantied under all circumstances.
-
-SMS text messages are a perfect fit for fulfilling those requirements. Infobip brings reliability of SMS to the world of PubNub development with newly published Infobip SMS function.
-
-Our final product will rely on the PubNub network to deliver messages to online users and fall back to SMS texts for those that loose their web connection.
+PubNub's real-time communications tools are a great fit for chat apps. However, to work users must be connected to the Internet to send and receive messages. Chat apps are only effective when everyone can immediately receive messages. The solution to this problem is using an SMS fallback system for chat messages when the Internet isn’t available.
+ 
+In our example we’re using PubNub’s robust chat functions paired with Infobip SMS API to create a tool with live chat when connected to the Internet and SMS fallback when the mobile user is disconnected from the Internet.
 
 ## Prerequisites
 
@@ -20,21 +18,21 @@ In order to follow along with this tutorial you will need to have both Infobip a
 
 ## Implementation
 
-Our app will compose of two parts: static web app that will run the basic chat interface and a pair of PubNub functions running in the back-end that will determine when to fall back to SMS and pipe the appropriate messages to Infobip SMS function.
+Our app will consist of two parts: a static web app that will run the basic chat interface and a pair of PubNub functions running in the back-end that will determine when to fallback to SMS and pipe the appropriate messages to Infobip SMS function.
 
-All of this will be grouped under single PubNub application, and using one keyset. After creating a new app default keyset will be set up. One thing that is required is to enable the presence feature for the keyset. You can find out more about presence from [official docs](https://www.pubnub.com/products/presence/). 
+All of this will be grouped under a single PubNub application, using one keyset. After creating a new app, default keyset will be set up. You'll need to enable the presence feature for the keyset. You can earn more about presence from [official docs](https://www.pubnub.com/products/presence/). 
 
-In addition to updating the keyset we'll need to install the Infobip SMS function. You can find it in [blocks catalog](https://www.pubnub.com/docs/blocks-catalog/infobip-sms). Just make sure to install it under appropriate app / keyset combination and set up the Infobip API key within its code. For details on SMS function setup check out the accompanying [walkthrough](https://www.pubnub.com/docs/blocks-catalog/infobip-sms#walkthrough).
+In addition to updating the keyset, we'll need to install the Infobip SMS function. You can find it in the [blocks catalog](https://www.pubnub.com/docs/blocks-catalog/infobip-sms). Make sure to install it under the appropriate app / keyset combination and set up the Infobip API key within its code. Check out this [walkthrough](https://www.pubnub.com/docs/blocks-catalog/infobip-sms#walkthrough) on how to set up SMS function. 
 
 ### Chat app client
 
-For it's part the static chat web app is a classic PubNub subscribe / publish application. 
+For its part, the static chat web app is a classic PubNub subscribe / publish application.
 
 Down the road we'll need the ability to send SMS text messages to users that drop out of the chat without signing out. To do that we'll need their phone numbers, so we require users accessing the app to fill out a simple sign-in form with their screen name and phone number. 
 
 ![sing in screen](img/sign-in.png)
 
-Both input values are later on grouped together and used as an `uuid` when setting up the PubNub client.
+Both input values will be grouped together and used as an `uuid` when setting up the PubNub client.
 
 ```javascript
 // constants setup
@@ -60,12 +58,12 @@ pubnub.subscribe({
 });
 ```
 
-Chat interface itself is rather simple. It handles 3 basic events:
-* arrival of new messages on the subscribed channel, and their rendering on screen
-* submission of new messages by the user, and their publishing to PubNub
-* user signing out, that triggers unsubscribe event on PubNub client and refreshes the app
+Chat interface itself is rather simple. It handles three basic events:
+1. Submission of new messages by the user and publishing to PubNub,
+2. Arrival of new messages on the subscribed channel and on-screen rendering,
+3. User signing out that will trigger an unsubscribe event on PubNub’s client and refresh the app.
 
-When sending new messages we include the uuid of currently signed in user. That will be used on the receiving side to display the screen name of the message sender. In addition we also include the url of the chat app itself. That url will not be visible within the web app but will instead be included in the fallback SMS text. 
+When sending new messages, we include the `uuid` of the currently signed in user. This will be used on the receiving end to display the screen name of the message sender. We'll also include the URL of the chat app itself. Although the URL will not be visible within the web app, it will be included in the fallback SMS text.
 
 ```javascript
 function publishMessage() {
@@ -86,7 +84,7 @@ function publishMessage() {
 }
 ```
 
-When handling the incoming messages we can extract the screen name from the sender and display it before the message text itself:
+When handling the incoming messages, we can extract the screen name from the sender and display it before the message text itself:
 
 ```javascript
 function handleIncomingMessage(obj) {
@@ -98,7 +96,8 @@ function handleIncomingMessage(obj) {
 }
 ```
 
-Last action of importance is to unsubscribe the user from the `chat-channel` when they click sing out button.
+Lastly, it's important to unsubscribe the user from the `chat-channel` when they click the sign out button.
+
 
 ```javascript
 function singOut() {
@@ -107,15 +106,15 @@ function singOut() {
 }
 ```
 
-With that we now have all the functionality needed for a standard chat app.
+We now have all the functionality needed for a standard chat app.
 
 ![Chat in progress](img/chat.png)
 
 ### SMS fallback
 
-Unfortunately, our current implementation is entirely reliant on user's internet connection. Loosing it would prevent them from receiving time critical messages. We'll implement the SMS fallback by tracking users online status via the PubNub's presence feature.
+Up to this point, our current implementation is fully reliant on a user's access to Internet connection. Losing data/Wifi would prevent user from receiving time critical messages. We'll implement the SMS fallback by tracking user's online status via PubNub's presence feature.
 
-To use the presence functionality it must first be enabled in the keyset configuration. Once that's done we need to make a small update to our static web app. PubNub client's configuration needs to be updated with presence specific properties:
+To use the presence functionality it must first be enabled in the keyset configuration. Once that's done, we need to make a small update to our static web app. PubNub's client configuration needs to be updated with presence specific properties:
 
 ```javascript
 // initialization
@@ -134,7 +133,7 @@ pubnub.subscribe({
 ``` 
 Now that the client part of the application is done we'll complete the project by implementing a pair of [PubNub functions](https://www.pubnub.com/products/functions/).
 
-With the client code updated we can receive the events not just every time a user joins and leaves our chat channel, but also when their connection times out. We'll want to keep track of users whose connection timed out, updating our list if they reconnect, or leave the channel.
+With the client code updated, we can receive events each time a user joins and leaves our chat channel, as well as when their internet connection times out. We'll want to keep a list of users whose connection timed out, updating the list if they reconnect, or leave the channel.
 
 For simplicity we will use the integrated key/value store, but you may build more robust concurrent solution for production ready products.
 
@@ -163,7 +162,7 @@ export default (request) => {
 };
 ```
 
-Now we have a persisted list of users that have lost the connection to PubNub. All that is left to do is send them SMS text messages when someone posts in the chat. For that we'll create a function that handles After Publish events on `chat-channel` and publishes new, SMS appropriate, messages on the `infobip_sms` channel. Messages published on that channel will be automatically picked up by the already installed Infobip SMS function and forwarded to Infobip API. 
+Now we have a persisted list of users who've lost the connection to PubNub. All that is left to do is to send them SMS messages when someone posts in the chat. For that we'll create a function that handles After Publish events on `chat-channel` and publishes new, SMS appropriate, messages on the `infobip_sms` channel. Messages published on that channel will be automatically picked up by the already installed Infobip SMS function and forwarded to Infobip’s API
 
 ```javascript
 // PubNub function metadata:
@@ -175,14 +174,12 @@ export default (request) => {
   const DESTINATION_KEY = 'smsDestinations';
 
   const message = request.message;
-  const chatRoom = message.chatRoom;
   const sender = message.sender.substring(0, message.sender.lastIndexOf('@'));
-
+  
   db.get(DESTINATION_KEY).then((destinations) => {
     destinations.forEach((uuid) => {
       const phoneNumber = uuid.substring(uuid.lastIndexOf('@') + 1);
-      const queryParam = `uuid=${uuid.replace(/ /g, '+')}`;
-      const smsText = `${sender} sent you a message: "${message.text}". You can leave this chat at: ${chatRoom}`;
+      const smsText = `${sender} sent you a message: "${message.text}". You can leave this chat at: ${message.chatRoom}`;
       // SMS message model is defined by the Infobip SMS function
       const smsMessage = {
           to: phoneNumber, // text message destination is a required field
@@ -199,10 +196,10 @@ export default (request) => {
 };
 ```
 
-And with that we can guarantee our users delivery of time sensitive messages even if their internet connection drops.
+With that we can guarantee our users delivery of time sensitive messages, even if their internet connection drops.
 
 ![sms fallback in action](img/sms-fallback.png)
 
 ## Source code
 
-You can find the finished source code for the entire project on Github. If you wish you can fork it and host the static web app part of it yourself. Additionally, you can use included code for the custom PubNub functions to jump start your own SMS fallback solution.
+You can find the finished source code for the entire project on [Github](https://github.com/infobip/infobip-pubnub-demo). If you wish you can fork it and host the static web app part of it yourself. Additionally, you can use included code for the custom PubNub functions to jump start your own SMS fallback solution.
